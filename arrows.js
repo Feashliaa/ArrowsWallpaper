@@ -7,6 +7,9 @@ var mouseY = 0;
 var mouseFlag = false;
 var pointers = [];
 var animationId;
+var lastFrame = 0;
+var fps = 60;
+var frameInterval = 1000 / fps;
 
 function initialize() {
     canvas = document.getElementById("canvas");
@@ -59,8 +62,13 @@ function resizeCanvas() {
     mouseFlag = false;
 }
 
-function drawScreen() {
+function drawScreen(timestamp) {
     animationId = requestAnimationFrame(drawScreen);
+
+    // Skip frame if not enough time has passed
+    var delta = timestamp - lastFrame;
+    if (delta < frameInterval) return;
+    lastFrame = timestamp - (delta % frameInterval);
 
     c.fillStyle = "black";
     c.fillRect(0, 0, width, height);
@@ -103,3 +111,12 @@ function mouseMove(e) {
     mouseY = e.clientY;
     mouseFlag = true;
 }
+
+document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+        cancelAnimationFrame(animationId);
+    } else {
+        lastFrame = 0;
+        drawScreen(0);
+    }
+});
