@@ -1,15 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8">
-      <title>Arrows</title>
-      <script src="arrows.js"></script>
-   </head>
-   <body onload="initialize();">
-      <div id="container">
-         <canvas id="canvas" width="800" height="600">
-            Browser does NOT support HTML5 Canvas
-         </canvas>
-      </div>
-   </body>
+
+<head>
+   <meta charset="UTF-8">
+   <title>Arrows</title>
+   <style>
+      * {
+         margin: 0;
+         padding: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+         overflow: hidden;
+         background: black;
+      }
+
+      #canvas {
+         display: block;
+      }
+   </style>
+   <script src="arrows.js"></script>
+</head>
+
+<body onload="initialize();">
+   <canvas id="canvas">
+      Browser does NOT support HTML5 Canvas
+   </canvas>
+</body>
+
 </html>

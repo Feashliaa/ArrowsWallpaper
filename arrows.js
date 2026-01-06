@@ -1,116 +1,105 @@
-var canvas;       // reference to Canvas
-var c;      // reference to Canvas drawing context
-var pi = Math.PI;
-var width;  // canvas width  ... convenience variable
-var height; // canvas height .. convenience variable
-var midX;
-var midY;
-var mouseX;
-var mouseY;
+var canvas;
+var c;
+var width;
+var height;
+var mouseX = 0;
+var mouseY = 0;
 var mouseFlag = false;
-var H = 0;    // hue
-var S = 100;   //saturation
-var L = 50;  // luminance
-var pointers = [];  // array of pointer objects
+var pointers = [];
+var animationId;
 
-// Initializes program state and starts the animation.
 function initialize() {
-
     canvas = document.getElementById("canvas");
-    if (canvas && canvas.getContext) {
+    if (!canvas || !canvas.getContext) return;
 
-        c = canvas.getContext("2d");
-        width = canvas.width;
-        height = canvas.height;
-        midX = width / 2;
-        midY = height / 2;
+    c = canvas.getContext("2d");
 
-        //    Initialize the array of pointer 
-        var radius = 14;
-        var padding = 5;
-        var delta = radius * 2 + padding;
+    // Initial setup
+    resizeCanvas();
 
-        for (var y = radius + padding; y < height; y += delta) {
-            for (var x = radius + padding; x < width; x += delta) {
-                var pointer = {};    // one pointer object
-                pointer.x = x;
-                pointer.y = y;
-                pointer.radius = radius;
-                pointer.angle = 0;
-                pointer.color = "hsla(" + H + "," + S + "%," + L + "%,1.0)";
-                pointers.push(pointer);    // push the object onto to array
-            } // end for
-        } // end for
+    // Resize listener with debounce
+    var resizeTimeout;
+    window.addEventListener("resize", function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(resizeCanvas, 100);
+    });
 
-        // check for a mouse move
+    canvas.addEventListener("mousemove", mouseMove, { passive: true });
 
-        canvas.addEventListener("mousemove", mouseMove);
+    drawScreen();
+}
 
-        window.setInterval("drawScreen()", 1000 / 60);  // call repeatedly
+function resizeCanvas() {
+    // Set canvas to full window size
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
 
-    } // end if
-} // initialize()
+    // Rebuild pointer grid for new dimensions
+    pointers = [];
 
+    var radius = 14;
+    var padding = 5;
+    var delta = radius * 2 + padding;
 
-// DrawScreen function
+    for (var y = radius + padding; y < height; y += delta) {
+        for (var x = radius + padding; x < width; x += delta) {
+            pointers.push({
+                x: x,
+                y: y,
+                radius: radius,
+                angle: 0,
+                hue: 0
+            });
+        }
+    }
+
+    // Reset mouse flag so arrows point correctly after resize
+    mouseFlag = false;
+}
+
 function drawScreen() {
+    animationId = requestAnimationFrame(drawScreen);
 
-    // Background color
-    c.beginPath();
     c.fillStyle = "black";
     c.fillRect(0, 0, width, height);
-    c.closePath();
 
-    // Update and draw the arrows
-    for (var i = 0; i < pointers.length; i++) {
-        if (mouseFlag) {
-            update(pointers[i]);
-        }
-        drawArrow(pointers[i]);
-    } // end for
-
-}  // end drawScreen
-
-// Draw arrow function
-function drawArrow(pt) {
-    var r = pt.radius;
-    var r2 = r / 2;
-
-    c.save();
-    c.beginPath();
-    c.strokeStyle = pt.color;
-    c.lineWidth = "3";
+    c.lineWidth = 3;
     c.lineCap = "round";
     c.lineJoin = "round";
-    c.translate(pt.x, pt.y);
-    c.rotate(-pt.angle);
-    c.moveTo(-r, 0); // draw the arrow
-    c.lineTo(r, 0);
-    c.moveTo(r - r / 2, -r2);
-    c.lineTo(r, 0);
-    c.lineTo(r - r / 2, r2);
-    c.stroke();
-    c.closePath();
-    c.restore();
 
-}  // end drawArrow	
+    for (var i = 0; i < pointers.length; i++) {
+        var pt = pointers[i];
 
+        if (mouseFlag) {
+            var dx = mouseX - pt.x;
+            var dy = mouseY - pt.y;
+            var radians = Math.atan2(dy, dx);
+            pt.angle = radians;
+            pt.hue = radians * 57.2958 + 180;
+        }
 
-// Get current mouse location
-function mouseMove(mouse) {
-    mouseX = mouse.pageX - canvas.offsetLeft;
-    mouseY = mouse.pageY - canvas.offsetTop;
+        var r = pt.radius;
+        var r2 = r * 0.5;
+
+        c.save();
+        c.beginPath();
+        c.strokeStyle = "hsl(" + pt.hue + ",100%,50%)";
+        c.translate(pt.x, pt.y);
+        c.rotate(pt.angle);
+        c.moveTo(-r, 0);
+        c.lineTo(r, 0);
+        c.moveTo(r - r2, -r2);
+        c.lineTo(r, 0);
+        c.lineTo(r - r2, r2);
+        c.stroke();
+        c.restore();
+    }
+}
+
+function mouseMove(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
     mouseFlag = true;
-
-} // end mouseMove	
-
-//  Update the angle of the arrow
-function update(pt) {
-    var dx = mouseX - pt.x;
-    var dy = mouseY - pt.y;
-    var radians = Math.atan2(dy, dx);
-
-    pt.angle = -radians;
-    H = radians * 180 / pi + 180 // the new color
-    pt.color = "hsla(" + H + ", " + S + "%, " + L + "%, 1.0)";
-} // end update
+}
